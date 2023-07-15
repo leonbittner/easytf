@@ -16,10 +16,9 @@ phases:
   build:
     commands:
       - cd ${CODEBUILD_SRC_DIR}/tf
-      - cp -r *.tf ${TF_FILES_DIR}/
         # ${CODEBUILD_SRC_DIR_TerraformPlanFile} is how we call the s3 saved terraform plan from the Plan stage
-      - cp ${CODEBUILD_SRC_DIR_TerraformPlanFile}/tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/tf/${TF_FILES_DIR}/
-      - cd ${CODEBUILD_SRC_DIR}/tf/${TF_FILES_DIR}
+      - cp ${CODEBUILD_SRC_DIR_TerraformPlanFile}/tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/tf
+      - cd ${CODEBUILD_SRC_DIR}/tf
       - terraform init -no-color
       - terraform apply tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}
 
