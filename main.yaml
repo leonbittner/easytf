@@ -124,7 +124,7 @@ Resources:
                   zip_file.writestr('tf/main.tf', main_tf_content)
 
                 # Upload the zip file to S3
-                s3.put_object(Bucket=os.environ['BUCKET'], Key="codecommit.zip", Body=zip_buffer.getvalue())
+                s3.put_object(Bucket=os.environ['BACKEND_BUCKET'], Key="codecommit.zip", Body=zip_buffer.getvalue())
                 
                 responseData = {
                   'statusCode': 201,
