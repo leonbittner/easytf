@@ -4,16 +4,16 @@ Description: CloudFormation template for AWS CodeCommit Repository and S3 Bucket
 
 Parameters:
   ProjectName:
-    Description: The name of the project to use for the CodeCommit repository and S3 bucket
+    Description: The name of the project to use for the created resources. Must be unique.
     Type: String
   BuildspecPlanUrl:
     Type: String
     Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/buildspec-plan.yaml'
-    Description: 'URL to download the buildspec-plan.yml file from.'
+    Description: URL to download the buildspec-plan.yml file from.
   BuildspecApplyUrl:
     Type: String
     Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/buildspec-apply.yaml'
-    Description: 'URL to download the buildspec-apply.yml file from.'
+    Description: URL to download the buildspec-apply.yml file from.
 
 Resources:
   CodeCommitRepository:
@@ -240,7 +240,7 @@ Resources:
                       "name": "ARTIFACTS_BUCKET",
                       "value": "${S3Bucket}",
                       "type": "PLAINTEXT"
-                    },
+                    }
                   ]
               RunOrder: 1 
         - 
