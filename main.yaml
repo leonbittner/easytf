@@ -249,7 +249,7 @@ Resources:
                 Version: 1
                 Provider: Manual 
               Configuration: 
-                CustomData: "Manual approval required. Message from Source is #{BuildVariables.TF_OUTPUT_MESSAGE}." 
+                CustomData: "Manual approval required. Message from Source is\n#{BuildVariables.TF_OUTPUT_MESSAGE}." 
               RunOrder: 1 
         - 
           Name: Deploy 
