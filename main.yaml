@@ -6,13 +6,16 @@ Parameters:
   ProjectName:
     Description: The name of the project to use for the created resources. Must be unique.
     Type: String
+  InitialEmail:
+    Type: String
+    Description: Email address to notify when approval for Terraform Apply is needed
   BuildspecPlanUrl:
     Type: String
-    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/buildspec-plan.yaml'
+    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/assets/buildspec-plan.yaml'
     Description: URL to download the buildspec-plan.yml file from.
   BuildspecApplyUrl:
     Type: String
-    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/buildspec-apply.yaml'
+    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/assets/buildspec-apply.yaml'
     Description: URL to download the buildspec-apply.yml file from.
 
 Resources:
@@ -149,12 +152,12 @@ Resources:
           AWS_REGION_CODE: !Ref "AWS::Region"
     DependsOn: S3Bucket
 
-
   GitInitCustomResource:
       Type: 'Custom::GitInitCustomResource'
       Properties:
         ServiceToken: !GetAtt GitInitLambda.Arn
         BucketName: !Ref S3Bucket
+
   CodePipelineServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -180,7 +183,21 @@ Resources:
               - iam:PassRole
               - codebuild:*
               - logs:*
-              Resource: '*'  
+              - sns:*
+              Resource: '*' 
+
+  ManualApprovalNotificationTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      TopicName: !Sub "${ProjectName}-ManualApprovalNotificationTopic" 
+
+  ManualApprovalNotificationSubscription:
+    Type: "AWS::SNS::Subscription"
+    Properties:
+      Endpoint: !Ref InitialEmail
+      Protocol: email
+      TopicArn: !Ref ManualApprovalNotificationTopic
+
   AppPipeline: 
     Type: AWS::CodePipeline::Pipeline 
     DependsOn: 
@@ -254,7 +271,8 @@ Resources:
                 Version: 1
                 Provider: Manual 
               Configuration: 
-                ExternalEntityLink: !Sub "https://s3.console.aws.amazon.com/s3/object/${S3Bucket}?region=${AWS::REGION}&prefix=tfout/#{BuildVariables.TF_OUTPUT_KEY}"
+                ExternalEntityLink: !Sub "https://s3.console.aws.amazon.com/s3/object/${S3Bucket}?region=${AWS::Region}&prefix=tfout/#{BuildVariables.TF_OUTPUT_KEY}"
+                NotificationArn: !GetAtt ManualApprovalNotificationTopic.Arn
                 CustomData: "Manual approval required. Please check the output of the previous stage." 
               RunOrder: 1 
         - 
