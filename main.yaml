@@ -229,13 +229,18 @@ Resources:
               Configuration: 
                 ProjectName: !Ref CodeBuildProjectTerraformPlan
                 PrimarySource: SourceOutput
-                EnvironmentVariables: |
+                EnvironmentVariables: !Sub |
                   [
                     {
                       "name": "PIPELINE_EXECUTION_ID",
                       "value": "#{codepipeline.PipelineExecutionId}",
                       "type": "PLAINTEXT"
-                    }
+                    },
+                    {
+                      "name": "ARTIFACTS_BUCKET",
+                      "value": "${S3Bucket}",
+                      "type": "PLAINTEXT"
+                    },
                   ]
               RunOrder: 1 
         - 
@@ -249,7 +254,8 @@ Resources:
                 Version: 1
                 Provider: Manual 
               Configuration: 
-                CustomData: "Manual approval required. Message from Source is\n#{BuildVariables.TF_OUTPUT_MESSAGE}." 
+                #ExternalEntityLink: "#{BuildVariables.TF_OUTPUT_KEY}"
+                CustomData: "Manual approval required. Please check the output of the previous stage. #{BuildVariables.TF_OUTPUT_KEY}" 
               RunOrder: 1 
         - 
           Name: Deploy 
