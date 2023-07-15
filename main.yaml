@@ -254,8 +254,8 @@ Resources:
                 Version: 1
                 Provider: Manual 
               Configuration: 
-                #ExternalEntityLink: "#{BuildVariables.TF_OUTPUT_KEY}"
-                CustomData: "Manual approval required. Please check the output of the previous stage. #{BuildVariables.TF_OUTPUT_KEY}" 
+                ExternalEntityLink: !Sub "https://s3.console.aws.amazon.com/s3/object/${S3Bucket}?region=${AWS::REGION}&prefix=tfout/#{BuildVariables.TF_OUTPUT_KEY}"
+                CustomData: "Manual approval required. Please check the output of the previous stage." 
               RunOrder: 1 
         - 
           Name: Deploy 
