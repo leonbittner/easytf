@@ -1,9 +1,10 @@
 version: 0.2
 
 env:
+  exported-variables:
+    TF_OUTPUT_MESSAGE: ""
   variables:
     TF_VERSION: "1.5.3"
-    TF_FILES_DIR: "tffiles"
 
 phases:
 
@@ -18,7 +19,7 @@ phases:
     commands:
       - cd ${CODEBUILD_SRC_DIR}/tf
       - terraform init -no-color
-      - terraform plan -out=tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}
+      - terraform plan -out=tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} > $TF_OUTPUT_MESSAGE
       - cp tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/
 
   post_build:

@@ -29,7 +29,7 @@ Resources:
         S3: 
           Bucket: !Ref S3Bucket
           Key: tmp_codecommit.zip
-    DependsOn: ReadmeCustomResource
+    DependsOn: GitInitCustomResource
 
   S3Bucket:
     Type: 'AWS::S3::Bucket'
@@ -112,7 +112,7 @@ Resources:
                   terraform {{
                     backend "s3" {{
                       bucket = "{os.environ['BACKEND_BUCKET']}"
-                      key    = "tfbackend"
+                      key    = "tfbackend/backend"
                       region = "{os.environ['AWS_REGION_CODE']}"
                     }}
                   }}
@@ -150,8 +150,8 @@ Resources:
     DependsOn: S3Bucket
 
 
-  ReadmeCustomResource:
-      Type: 'Custom::ReadmeCustomResource'
+  GitInitCustomResource:
+      Type: 'Custom::GitInitCustomResource'
       Properties:
         ServiceToken: !GetAtt GitInitLambda.Arn
         BucketName: !Ref S3Bucket
@@ -217,6 +217,7 @@ Resources:
               InputArtifacts: 
                 -
                   Name: SourceOutput 
+              Namespace: BuildVariables
               ActionTypeId: 
                 Category: Build 
                 Owner: AWS 
@@ -248,7 +249,7 @@ Resources:
                 Version: 1
                 Provider: Manual 
               Configuration: 
-                CustomData: Please verify the terraform plan output on the Plan stage and only approve this step if you see expected changes!
+                CustomData: "Manual approval required. Message from Source is #{BuildVariables.TF_OUTPUT_MESSAGE}." 
               RunOrder: 1 
         - 
           Name: Deploy 
