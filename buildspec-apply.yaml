@@ -1,0 +1,28 @@
+version: 0.2
+
+env:
+  variables:
+    TF_VERSION: "1.5.3"
+    TF_FILES_DIR: "tf"
+
+phases:
+  install:
+    commands:
+      - cd /usr/bin
+      - curl -s -qL -o terraform.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
+      - unzip -o terraform.zip
+      - terraform --version
+
+  build:
+    commands:
+      - cd ${CODEBUILD_SRC_DIR}/configurations
+      - cp -r *.tf ${TF_FILES_DIR}/
+        # ${CODEBUILD_SRC_DIR_TerraformPlanFile} is how we call the s3 saved terraform plan from the Plan stage
+      - cp ${CODEBUILD_SRC_DIR_TerraformPlanFile}/tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/configurations/${TF_FILES_DIR}/
+      - cd ${CODEBUILD_SRC_DIR}/configurations/${TF_FILES_DIR}
+      - terraform init -no-color
+      - terraform apply tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}
+
+  post_build:
+    commands:
+      - echo "Terraform apply completed on `date`"

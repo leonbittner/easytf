@@ -1,0 +1,346 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for AWS CodeCommit Repository and S3 Bucket
+
+Parameters:
+  ProjectName:
+    Description: The name of the project to use for the CodeCommit repository and S3 bucket
+    Type: String
+  BuildspecPlanUrl:
+    Type: String
+    Default: ''
+    Description: 'URL to download the buildspec-plan.yml file from.'
+  BuildspecApplyUrl:
+    Type: String
+    Default: ''
+    Description: 'URL to download the buildspec-apply.yml file from.'
+
+Resources:
+  CodeCommitRepository:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: 
+          Fn::Sub:
+            - "${ProjectName}-Infrastructure-Repository"
+            - ProjectName: !Ref ProjectName
+      RepositoryDescription: Easytf Infrastructure Repository
+      Code:
+        BranchName: main
+        S3: 
+          Bucket: !Ref S3Bucket
+          Key: codecommit.zip
+    DependsOn: ReadmeCustomResource
+
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName:
+        Fn::Sub:
+          - "${ProjectName}-terraform-backend"
+          - ProjectName: !Ref ProjectName
+
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: lambda-access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - s3:PutObject
+              - s3:GetObject
+              - s3:DeleteObject
+              Resource: '*'
+
+  GitInitLambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import zipfile
+          import os
+          import cfnresponse
+          from io import BytesIO
+          from urllib.request import urlopen
+
+          def handler(event, context):
+            if event['RequestType'] == 'Delete':
+              responseData = {
+                  'statusCode': 200,
+                  'body': json.dumps('Success')
+                }
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+              return responseData
+
+            if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+              try:
+                s3 = boto3.client('s3')
+
+                # URLs to download buildspec files from
+                files_to_download = {
+                    "buildspec-plan.yml": os.environ['BUILDSPEC_PLAN_URL'],
+                    "buildspec-apply.yml": os.environ['BUILDSPEC_APPLY_URL']
+                }
+
+                # Create a new zip file in memory
+                zip_buffer = BytesIO()
+                with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                  for file_name, file_url in files_to_download.items():
+                    response = urlopen(file_url)
+                    zip_file.writestr(file_name, response.read())
+
+                  # Add backend.tf file to tf directory inside zip
+                  backend_tf_content = f'''
+                  terraform {{
+                    backend "s3" {{
+                      bucket = "{os.environ['BACKEND_BUCKET']}"
+                      key    = "tfbackend"
+                      region = "{os.environ['AWS_REGION_CODE']}"
+                    }}
+                  }}
+                  '''
+                  zip_file.writestr('tf/backend.tf', backend_tf_content)
+
+                  # Add main.tf file to tf directory inside zip
+                  main_tf_content = "# Write Terraform code here"
+                  zip_file.writestr('tf/main.tf', main_tf_content)
+
+                # Upload the zip file to S3
+                s3.put_object(Bucket=os.environ['BUCKET'], Key="codecommit.zip", Body=zip_buffer.getvalue())
+                
+                responseData = {
+                  'statusCode': 201,
+                  'body': json.dumps('Success')
+                }
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+                return responseData
+
+              except Exception as e:
+                print("Error occurred: ", e)
+                return {
+                  'statusCode': 500,
+                  'body': json.dumps('An error occurred while processing the request.')
+                }
+      Runtime: python3.8
+      Timeout: 15
+      Environment:
+        Variables:
+          BACKEND_BUCKET: !Ref S3Bucket
+          BUILDSPEC_PLAN_URL: !Ref BuildspecPlanUrl
+          BUILDSPEC_APPLY_URL: !Ref BuildspecApplyUrl
+          AWS_REGION_CODE: !Ref "AWS::Region"
+    DependsOn: S3Bucket
+
+
+  ReadmeCustomResource:
+      Type: 'Custom::ReadmeCustomResource'
+      Properties:
+        ServiceToken: !GetAtt GitInitLambda.Arn
+        BucketName: !Ref S3Bucket
+  CodePipelineServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codepipeline.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: codepipeline-service
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - codecommit:*
+              - s3:*
+              - cloudformation:*
+              - iam:PassRole
+              - codebuild:*
+              - logs:*
+              Resource: '*'  
+  AppPipeline: 
+    Type: AWS::CodePipeline::Pipeline 
+    DependsOn: 
+      - CodeBuildProjectTerraformPlan
+      - CodeBuildProjectTerraformApply
+      - CodePipelineServiceRole
+    Properties: 
+      RoleArn:
+        !GetAtt CodePipelineServiceRole.Arn
+      Stages: 
+        - 
+          Name: Source 
+          Actions: 
+            - 
+              Name: SourceAction
+              ActionTypeId: 
+                Category: Source 
+                Owner: AWS 
+                Version: 1 
+                Provider: CodeCommit 
+              OutputArtifacts: 
+                - 
+                  Name: SourceOutput 
+              Configuration: 
+                RepositoryName: 
+                  !GetAtt CodeCommitRepository.Name
+                BranchName: main 
+              RunOrder: 1 
+        - 
+          Name: Plan 
+          Actions: 
+            - 
+              Name: Terraform-Plan
+              InputArtifacts: 
+                -
+                  Name: SourceOutput 
+              ActionTypeId: 
+                Category: Build 
+                Owner: AWS 
+                Version: 1 
+                Provider: CodeBuild
+              OutputArtifacts: 
+                - 
+                  Name: TerraformPlanFile 
+              Configuration: 
+                ProjectName: !Ref CodeBuildProjectTerraformPlan
+                PrimarySource: SourceOutput
+                EnvironmentVariables: |
+                  [
+                    {
+                      "name": "PIPELINE_EXECUTION_ID",
+                      "value": "#{codepipeline.PipelineExecutionId}",
+                      "type": "PLAINTEXT"
+                    }
+                  ]
+              RunOrder: 1 
+        - 
+          Name: Manual-Approval 
+          Actions: 
+            - 
+              Name: AWS-Admin-Approval
+              ActionTypeId: 
+                Category: Approval 
+                Owner: AWS 
+                Version: 1
+                Provider: Manual 
+              Configuration: 
+                CustomData: Please verify the terraform plan output on the Plan stage and only approve this step if you see expected changes!
+              RunOrder: 1 
+        - 
+          Name: Deploy 
+          Actions: 
+            - 
+              Name: Terraform-Apply
+              InputArtifacts: 
+                -
+                  Name: SourceOutput 
+                -
+                  Name: TerraformPlanFile
+              ActionTypeId: 
+                Category: Build 
+                Owner: AWS 
+                Version: 1 
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProjectTerraformApply
+                PrimarySource: SourceOutput
+                EnvironmentVariables: |
+                  [
+                    {
+                      "name": "PIPELINE_EXECUTION_ID",
+                      "value": "#{codepipeline.PipelineExecutionId}",
+                      "type": "PLAINTEXT"
+                    }
+                  ]
+              RunOrder: 1
+      ArtifactStore: 
+        Type: S3 
+        Location: !Ref S3Bucket
+  CodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: CodeBuildServiceRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codebuild.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: codebuild-service
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - codecommit:*
+              - codebuild:*
+              - s3:*
+              - cloudformation:*
+              - iam:PassRole
+              - codebuild:*
+              - logs:*
+              Resource: '*' 
+  CodeBuildProjectTerraformPlan:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${ProjectName}-plan"
+      Description: "Your description here"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: 'BUILD_GENERAL1_SMALL'
+        Image: 'aws/codebuild/standard:5.0'
+        Type: 'LINUX_CONTAINER'
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-plan.yml
+
+  CodeBuildProjectTerraformApply:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${ProjectName}-apply"
+      Description: "Your description here"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: 'BUILD_GENERAL1_SMALL'
+        Image: 'aws/codebuild/standard:5.0'
+        Type: 'LINUX_CONTAINER'
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-apply.yml
+
+Outputs:
+  BucketName:
+    Value: !Ref S3Bucket
