@@ -272,7 +272,7 @@ Resources:
                 Provider: Manual 
               Configuration: 
                 ExternalEntityLink: !Sub "https://s3.console.aws.amazon.com/s3/object/${S3Bucket}?region=${AWS::Region}&prefix=tfout/#{BuildVariables.TF_OUTPUT_KEY}"
-                NotificationArn: !GetAtt ManualApprovalNotificationTopic.Arn
+                NotificationArn: !Ref ManualApprovalNotificationTopic
                 CustomData: "Manual approval required. Please check the output of the previous stage." 
               RunOrder: 1 
         - 
