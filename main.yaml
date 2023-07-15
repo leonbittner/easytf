@@ -8,11 +8,11 @@ Parameters:
     Type: String
   BuildspecPlanUrl:
     Type: String
-    Default: ''
+    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/buildspec-plan.yaml'
     Description: 'URL to download the buildspec-plan.yml file from.'
   BuildspecApplyUrl:
     Type: String
-    Default: ''
+    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/buildspec-apply.yaml'
     Description: 'URL to download the buildspec-apply.yml file from.'
 
 Resources:
