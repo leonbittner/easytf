@@ -24,7 +24,7 @@ phases:
       - cp tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/
       - aws s3 cp tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt s3://${ARTIFACTS_BUCKET}/tfout/tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
       - export TF_OUTPUT_URL=$(aws s3 presign s3://${ARTIFACTS_BUCKET}/tfout/tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt)
-      - output=$(cat tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt) && [[ $output == *"no changes"* ]] && aws codepipeline stop-pipeline-execution --no-abandon --pipeline-name ${PIPELINE_NAME} --pipeline-execution-id {PIPELINE_EXECUTION_ID}"
+      - output=$(cat tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt) && [[ $output == *"no changes"* ]] && aws codepipeline stop-pipeline-execution --no-abandon --pipeline-name ${PIPELINE_NAME} --pipeline-execution-id {PIPELINE_EXECUTION_ID} --reason "No changes detected."
 
 
   post_build:
