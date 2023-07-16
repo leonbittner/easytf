@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   exported-variables:
-    - TF_OUTPUT_KEY
+    - TF_OUTPUT_URL
   variables:
     TF_VERSION: "1.5.3"
 
@@ -23,7 +23,7 @@ phases:
       - terraform show -no-color tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} | tee tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
       - cp tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/
       - aws s3 cp tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt s3://${ARTIFACTS_BUCKET}/tfout/tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
-      - export TF_OUTPUT_KEY=tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
+      - export TF_OUTPUT_URL=$(aws s3 presign s3://${ARTIFACTS_BUCKET}/tfout/tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt)
 
   post_build:
     commands:
