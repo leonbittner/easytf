@@ -282,6 +282,11 @@ Resources:
                       "type": "PLAINTEXT"
                     },
                     {
+                      "name": "PIPELINE_NAME",
+                      "value": "${AppPipeline}",
+                      "type": "PLAINTEXT"
+                    },
+                    {
                       "name": "ARTIFACTS_BUCKET",
                       "value": "${S3Bucket}",
                       "type": "PLAINTEXT"
@@ -289,7 +294,7 @@ Resources:
                   ]
               RunOrder: 1 
         - 
-          Name: Manual-Approval 
+          Name: Manual-Approval
           Actions: 
             - 
               Name: AWS-Admin-Approval

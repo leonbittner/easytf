@@ -11,6 +11,5 @@ Easytf is a ready to deploy CI/CD environment for Terraform. Setting up a Terraf
 
 ### Limitations
 
-- IAM Roles need to be restricted 
 - No Cross Account
 - Only One Stage (main) at the moment
