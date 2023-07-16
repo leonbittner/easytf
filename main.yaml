@@ -175,16 +175,44 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-            - Effect: Allow
-              Action:
-              - codecommit:*
-              - s3:*
-              - cloudformation:*
-              - iam:PassRole
-              - codebuild:*
-              - logs:*
-              - sns:*
-              Resource: '*' 
+              - Sid: "VisualEditor0"
+                Effect: "Allow"
+                Action:
+                  - "codecommit:GetBranch"
+                  - "codecommit:GetCommit"
+                  - "codecommit:BatchGetCommits"
+                  - "codecommit:GetRepository"
+                  - "codecommit:GitPull"
+                  - "codecommit:UploadArchive"
+                  - "codecommit:GetUploadArchiveStatus"
+                  - "codecommit:CancelUploadArchive"
+                Resource:
+                  - !Sub "arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${ProjectName}-Infrastructure-Repository"
+              - Sid: "VisualEditor2"
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:ListBucket"
+                  - "s3:GetBucketVersioning"
+                  - "s3:DeleteObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${ProjectName}-terraform-backend/*"
+              - Sid: "VisualEditor3"
+                Effect: "Allow"
+                Action:
+                  - "codebuild:StartBuild"
+                  - "codebuild:StopBuild"
+                  - "codebuild:BatchGetBuilds"
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ProjectName}-plan"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ProjectName}-apply"
+              - Sid: "VisualEditor4"
+                Effect: "Allow"
+                Action:
+                  - "sns:Publish"
+                Resource:
+                  - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ProjectName}-ManualApprovalNotificationTopic" 
 
   ManualApprovalNotificationTopic:
     Type: "AWS::SNS::Topic"
@@ -305,10 +333,9 @@ Resources:
       ArtifactStore: 
         Type: S3 
         Location: !Ref S3Bucket
-  CodeBuildRole:
+  CodeBuildServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: CodeBuildServiceRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -318,28 +345,38 @@ Resources:
             - codebuild.amazonaws.com
           Action:
           - sts:AssumeRole
-      Path: "/"
       Policies:
         - PolicyName: codebuild-service
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-            - Effect: Allow
-              Action:
-              - codecommit:*
-              - codebuild:*
-              - s3:*
-              - cloudformation:*
-              - iam:PassRole
-              - codebuild:*
-              - logs:*
-              Resource: '*' 
+              - Sid: "VisualEditor2"
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:ListBucket"
+                  - "s3:GetBucketVersioning"
+                  - "s3:DeleteObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${ProjectName}-terraform-backend/*"
+              - Sid: "Statement1"
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}-plan:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}-apply:*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
   CodeBuildProjectTerraformPlan:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: !Sub "${ProjectName}-plan"
       Description: "Your description here"
-      ServiceRole: !GetAtt CodeBuildRole.Arn
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -355,7 +392,7 @@ Resources:
     Properties:
       Name: !Sub "${ProjectName}-apply"
       Description: "Your description here"
-      ServiceRole: !GetAtt CodeBuildRole.Arn
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Artifacts:
         Type: CODEPIPELINE
       Environment:

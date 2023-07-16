@@ -19,7 +19,8 @@ phases:
     commands:
       - cd ${CODEBUILD_SRC_DIR}/tf
       - terraform init -no-color
-      - terraform plan -out=tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} > tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
+      - terraform plan -out=tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} 
+      - terraform show -no-color tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} > tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
       - cp tfplan_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID} ${CODEBUILD_SRC_DIR}/
       - aws s3 cp tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt s3://${ARTIFACTS_BUCKET}/tfout/tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
       - export TF_OUTPUT_KEY=tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt
