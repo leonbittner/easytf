@@ -233,6 +233,7 @@ Resources:
       - CodeBuildProjectTerraformApply
       - CodePipelineServiceRole
     Properties: 
+      Name: !Sub "${ProjectName}-Infrastructure-Pipeline"
       RoleArn:
         !GetAtt CodePipelineServiceRole.Arn
       Stages: 
@@ -283,7 +284,7 @@ Resources:
                     },
                     {
                       "name": "PIPELINE_NAME",
-                      "value": "${AppPipeline}",
+                      "value": "${ProjectName}-Infrastructure-Pipeline",
                       "type": "PLAINTEXT"
                     },
                     {
