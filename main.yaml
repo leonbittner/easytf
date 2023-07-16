@@ -253,7 +253,8 @@ Resources:
               Configuration: 
                 RepositoryName: 
                   !GetAtt CodeCommitRepository.Name
-                BranchName: main 
+                BranchName: main
+                PollForSourceChanges: false 
               RunOrder: 1 
         - 
           Name: Plan 
@@ -339,6 +340,53 @@ Resources:
       ArtifactStore: 
         Type: S3 
         Location: !Ref S3Bucket
+  PipelineEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: eb-pipeline-execution
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Effect: Allow
+                Action: codepipeline:StartPipelineExecution
+                Resource: !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref AppPipeline ] ] 
+  PipelineEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - 'CodeCommit Repository State Change'
+        resources:
+          - !Join [ '', [ 'arn:aws:codecommit:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Sub '${ProjectName}-Infrastructure-Repository' ] ]
+        detail:
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - branch
+          referenceName:
+            - main
+      Targets:
+        -
+          Arn: 
+            !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref AppPipeline ] ]
+          RoleArn: !GetAtt PipelineEventRole.Arn
+          Id: codepipeline-AppPipeline
   CodeBuildServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
