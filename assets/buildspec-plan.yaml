@@ -27,7 +27,8 @@ phases:
       # We export a presigned URL for S3 to show in the approval prompt.
       - export TF_OUTPUT_URL=$(aws s3 presign s3://${ARTIFACTS_BUCKET}/tfout/tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt)
       # Stop the pipeline if no changes were detected:
-      - output=$(cat tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt) && [[ $output == *"no changes"* ]] && aws codepipeline stop-pipeline-execution --no-abandon --pipeline-name ${PIPELINE_NAME} --pipeline-execution-id {PIPELINE_EXECUTION_ID} --reason "No changes detected."
+      - output=$(cat tfout_commitid_${CODEBUILD_RESOLVED_SOURCE_VERSION}_pipelineid_${PIPELINE_EXECUTION_ID}.txt) && echo "$output" | grep -q "no changes" && aws codepipeline stop-pipeline-execution --no-abandon --pipeline-name ${PIPELINE_NAME} --pipeline-execution-id ${PIPELINE_EXECUTION_ID} --reason "No changes detected."
+
 
 
   post_build:
