@@ -39,7 +39,7 @@ Resources:
     Properties:
       BucketName:
         Fn::Sub:
-          - "${ProjectName}-terraform-backend"
+          - "${ProjectName}-Terraform-Backend"
           - ProjectName: !Ref ProjectName
 
   LambdaExecutionRole:
@@ -197,7 +197,7 @@ Resources:
                   - "s3:GetBucketVersioning"
                   - "s3:DeleteObject"
                 Resource:
-                  - !Sub "arn:aws:s3:::${ProjectName}-terraform-backend/*"
+                  - !Sub "arn:aws:s3:::${ProjectName}-Terraform-Backend/*"
               - Sid: "VisualEditor3"
                 Effect: "Allow"
                 Action:
@@ -413,7 +413,7 @@ Resources:
                   - "s3:GetBucketVersioning"
                   - "s3:DeleteObject"
                 Resource:
-                  - !Sub "arn:aws:s3:::${ProjectName}-terraform-backend/*"
+                  - !Sub "arn:aws:s3:::${ProjectName}-Terraform-Backend/*"
               - Sid: "Statement1"
                 Effect: "Allow"
                 Action:
