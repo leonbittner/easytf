@@ -24,7 +24,7 @@ Resources:
     Properties:
       RepositoryName: 
           Fn::Sub:
-            - "${ProjectName}-Infrastructure-Repository"
+            - "${ProjectName}-infrastructure-repository"
             - ProjectName: !Ref ProjectName
       RepositoryDescription: Easytf Infrastructure Repository
       Code:
@@ -39,7 +39,7 @@ Resources:
     Properties:
       BucketName:
         Fn::Sub:
-          - "${ProjectName}-Terraform-Backend"
+          - "${ProjectName}-terraform-backend"
           - ProjectName: !Ref ProjectName
 
   LambdaExecutionRole:
@@ -187,7 +187,7 @@ Resources:
                   - "codecommit:GetUploadArchiveStatus"
                   - "codecommit:CancelUploadArchive"
                 Resource:
-                  - !Sub "arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${ProjectName}-Infrastructure-Repository"
+                  - !Sub "arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${ProjectName}-infrastructure-repository"
               - Sid: "VisualEditor2"
                 Effect: "Allow"
                 Action:
@@ -197,7 +197,7 @@ Resources:
                   - "s3:GetBucketVersioning"
                   - "s3:DeleteObject"
                 Resource:
-                  - !Sub "arn:aws:s3:::${ProjectName}-Terraform-Backend/*"
+                  - !Sub "arn:aws:s3:::${ProjectName}-terraform-backend/*"
               - Sid: "VisualEditor3"
                 Effect: "Allow"
                 Action:
@@ -212,12 +212,12 @@ Resources:
                 Action:
                   - "sns:Publish"
                 Resource:
-                  - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ProjectName}-ManualApprovalNotificationTopic" 
+                  - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ProjectName}-manual-approval-topic" 
 
   ManualApprovalNotificationTopic:
     Type: "AWS::SNS::Topic"
     Properties:
-      TopicName: !Sub "${ProjectName}-ManualApprovalNotificationTopic" 
+      TopicName: !Sub "${ProjectName}-manual-approval-topic" 
 
   ManualApprovalNotificationSubscription:
     Type: "AWS::SNS::Subscription"
@@ -233,7 +233,7 @@ Resources:
       - CodeBuildProjectTerraformApply
       - CodePipelineServiceRole
     Properties: 
-      Name: !Sub "${ProjectName}-Infrastructure-Pipeline"
+      Name: !Sub "${ProjectName}-infrastructure-pipeline"
       RoleArn:
         !GetAtt CodePipelineServiceRole.Arn
       Stages: 
@@ -285,7 +285,7 @@ Resources:
                     },
                     {
                       "name": "PIPELINE_NAME",
-                      "value": "${ProjectName}-Infrastructure-Pipeline",
+                      "value": "${ProjectName}-infrastructure-pipeline",
                       "type": "PLAINTEXT"
                     },
                     {
@@ -372,7 +372,7 @@ Resources:
         detail-type:
           - 'CodeCommit Repository State Change'
         resources:
-          - !Join [ '', [ 'arn:aws:codecommit:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Sub '${ProjectName}-Infrastructure-Repository' ] ]
+          - !Join [ '', [ 'arn:aws:codecommit:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Sub '${ProjectName}-infrastructure-repository' ] ]
         detail:
           event:
             - referenceCreated
@@ -413,7 +413,7 @@ Resources:
                   - "s3:GetBucketVersioning"
                   - "s3:DeleteObject"
                 Resource:
-                  - !Sub "arn:aws:s3:::${ProjectName}-Terraform-Backend/*"
+                  - !Sub "arn:aws:s3:::${ProjectName}-terraform-backend/*"
               - Sid: "Statement1"
                 Effect: "Allow"
                 Action:
