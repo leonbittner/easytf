@@ -17,6 +17,10 @@ Parameters:
     Type: String
     Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/assets/buildspec-apply.yaml'
     Description: URL to download the buildspec-apply.yml file from.
+  GitignoreUrl:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/leonbittner/easytf/main/assets/.gitignore'
+    Description: URL to download the buildspec-apply.yml file from.
 
 Resources:
   CodeCommitRepository:
@@ -100,7 +104,8 @@ Resources:
                 # URLs to download buildspec files from
                 files_to_download = {
                     "buildspec-plan.yml": os.environ['BUILDSPEC_PLAN_URL'],
-                    "buildspec-apply.yml": os.environ['BUILDSPEC_APPLY_URL']
+                    "buildspec-apply.yml": os.environ['BUILDSPEC_APPLY_URL'],
+                    ".gitignore": os.environ['GITIGNORE_URL']
                 }
 
                 # Create a new zip file in memory
