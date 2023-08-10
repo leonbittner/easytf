@@ -154,6 +154,7 @@ Resources:
           BACKEND_BUCKET: !Ref S3Bucket
           BUILDSPEC_PLAN_URL: !Ref BuildspecPlanUrl
           BUILDSPEC_APPLY_URL: !Ref BuildspecApplyUrl
+          GITIGNORE_URL: !Ref GitignoreUrl
           AWS_REGION_CODE: !Ref "AWS::Region"
     DependsOn: S3Bucket
 
